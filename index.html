@@ -64,6 +64,9 @@
   td .tag.hybrid { background: #f4edfc; color: var(--purple); border: 1.5px solid var(--purple); }
   ul.clean { margin: 12px 0 12px 22px; color: #333c4d; }
   ul.clean li { margin: 7px 0; max-width: 900px; }
+  pre.schema { background: #f7f9fc; border: 1px solid var(--line); border-left: 4px solid var(--purple); border-radius: 10px; padding: 18px 22px; margin: 18px 0; font-family: Consolas, "SF Mono", Menlo, monospace; font-size: 12.5px; line-height: 1.6; color: #2b3346; overflow-x: auto; white-space: pre; }
+  pre.schema .c { color: #8a6914; font-style: italic; }
+  pre.schema .i { color: var(--purple); font-weight: 600; }
   footer { color: var(--sub); font-size: 12.5px; padding: 10px 6px 0; }
   @media (max-width: 1180px) {
     nav { position: static; width: auto; height: auto; padding: 16px 12px; }
@@ -91,7 +94,7 @@
   <a href="#features"><span class="num">5</span>Feature Catalog</a>
   <a href="#trust"><span class="num">6</span>Safety, Privacy &amp; Trust</a>
   <a href="#latency"><span class="num">7</span>Latency</a>
-  <a href="#decisions"><span class="num">8</span>Decisions &amp; Roadmap</a>
+  <a href="#decisions"><span class="num">8</span>Decisions and Reasoning</a>
   <a href="#appendix"><span class="num">9</span>Appendix: Assumptions &amp; Sources</a>
 </nav>
 
@@ -108,7 +111,7 @@
     <span class="chip">Deterministic execution</span>
   </div>
   <div class="stats">
-    <div class="stat"><b>~90%</b><span>of interactions handled fully on-device</span></div>
+    <div class="stat"><b>~90%</b><span>of interactions handled fully on-device (design target)</span></div>
     <div class="stat"><b>~1s</b><span>voice-to-voice response on the edge path</span></div>
     <div class="stat"><b>22</b><span>Indian languages, mixed-language speech included</span></div>
     <div class="stat"><b>0</b><span>write paths into the ASIL-D safety domain</span></div>
@@ -137,12 +140,17 @@
 
   <!-- VEHICLE container -->
   <rect x="60" y="225" width="1290" height="605" rx="14" fill="#f7f9fc" stroke="#22283a" stroke-width="2.5"/>
-  <text x="88" y="252" font-size="16.5" font-weight="bold" fill="#1a2333">VEHICLE: Qualcomm Snapdragon Cockpit + Sarvam Edge (Hexagon NPU)</text>
-  <text x="88" y="274" font-size="12.5" font-style="italic" fill="#5a6472">Edge tier: offline-capable; audio and in-cabin video stay in the vehicle</text>
 
-  <!-- voice in: driver bottom, all the way down into Saaras STT. Drawn after the vehicle background so it isn't painted over. Wake word / activation trigger intentionally not shown here; handled separately. -->
+  <!-- voice in: driver bottom, all the way down into Saaras STT. Drawn after the vehicle background so it isn't painted over, but before the VEHICLE header text below so the arrow passes behind the header rather than slicing through its letters. Wake word / activation trigger intentionally not shown here; handled separately. -->
   <path d="M500,145 L500,200 L380,200 L380,365" fill="none" stroke="#333846" stroke-width="2" marker-end="url(#aDark01)"/>
   <text x="390" y="195" font-size="12.5" fill="#333846">Voice In</text>
+
+  <!-- mask: hides the voice-in arrow where it passes behind the VEHICLE header text (same box fill, so seamless), so the arrow doesn't show through the letterforms' counters/gaps -->
+  <rect x="360" y="236" width="42" height="46" fill="#f7f9fc"/>
+
+  <!-- VEHICLE header text: drawn after the voice-in arrow (and its mask) so it renders on top, keeping the arrow from cutting through "Snapdragon" / "video" -->
+  <text x="88" y="252" font-size="16.5" font-weight="bold" fill="#1a2333">VEHICLE: Qualcomm Snapdragon Cockpit + Sarvam Edge (Hexagon NPU)</text>
+  <text x="88" y="274" font-size="12.5" font-style="italic" fill="#5a6472">Edge tier: offline-capable; audio and in-cabin video stay in the vehicle</text>
 
   <!-- voice out: starts at the top of Response + Bulbul TTS, short corridor, into driver bottom. Drawn after the vehicle background so it isn't painted over. -->
   <path d="M1030,365 L1030,175 L900,175 L900,150" fill="none" stroke="#333846" stroke-width="2" marker-end="url(#aDark01)"/>
@@ -229,7 +237,7 @@
 
   <!-- boundary labels -->
   <text x="520" y="860" font-size="13" font-style="italic" fill="#5a6472">network boundary: connectivity optional</text>
-  <text x="95" y="882" font-size="12" fill="#1e7d3e">cloud overflow: de-identified text only, no audio / video / PII</text>
+  <text x="95" y="882" font-size="12" fill="#1e7d3e">cloud overflow: de-identified text + coarse query-scoped location; no audio / video / identity</text>
 
   <!-- CLOUD -->
   <rect x="60" y="910" width="1290" height="180" rx="14" fill="#eaf6ee" stroke="#1e7d3e" stroke-width="2.5" stroke-dasharray="9,6"/>
@@ -252,7 +260,7 @@
   <line x1="900" y1="1150" x2="955" y2="1150" stroke="#c2571f" stroke-width="2.5" marker-end="url(#aOrange01)"/>
   <text x="970" y="1155" font-size="13" fill="#333846">one-way, read-only safety feed</text>
   <text x="95" y="1195" font-size="12.5" fill="#5a6472">The assistant reads validated safety state and speaks it; it never actuates a safety function. Cloud is overflow, never a dependency.</text>
-</svg><div class="figcap">Figure 1. The whole system on one page: the driver's voice goes straight into the on-device pipeline (Saaras STT, Mayura translation for non-English or mixed-language turns, Intent Classifier + Policy Router), which either issues a validated command to the Deterministic Command Executor or hands the query to the on-device Voice Assistant (LLM) for a grounded answer; both paths end at Response + Bulbul TTS. The isolated ASIL-D safety domain (shown below, outside the main pipeline) feeds one-way alerts into the response, and the cloud, running the larger Sarvam 30B/105B models plus live data, is reached only by overflow. Wake word / manual-button activation is a separate trigger and isn't shown in this view. Solid lines are on-device flow, green dashed is the optional cloud path, gold dashed is local context, orange is the read-only safety feed.</div></div>
+</svg><div class="figcap">Figure 1. The whole system on one page: the driver's voice goes straight into the on-device pipeline (Saaras STT, Mayura translation for non-English or mixed-language turns, Intent Classifier + Policy Router), which either issues a validated command to the Deterministic Command Executor or hands the query to the on-device Voice Assistant (LLM) for a grounded answer; both paths end at Response + Bulbul TTS. Priority arbitration between competing outputs, the Safety Narrator of Figure 4, lives inside that response stage and is not drawn separately at this zoom level. The isolated ASIL-D safety domain (shown below, outside the main pipeline) feeds one-way alerts into the response, and the cloud, running the larger Sarvam 30B/105B models plus live data, is reached only by overflow. Wake word / manual-button activation is a separate trigger and isn't shown in this view. Solid lines are on-device flow, green dashed is the optional cloud path, gold dashed is local context, orange is the read-only safety feed.</div></div>
 
   <p>Each component in Figure 1 has one narrow job. None of their responsibilities overlap, which is what keeps the control path auditable: at any point in the flow, there is exactly one component that could have taken an action, and it is always the Deterministic Command Executor.</p>
   <table>
@@ -262,8 +270,9 @@
     <tr><td class="feat">Intent Classifier + Policy Router</td><td>Classifies the driver's intent and decides two things: control command vs. informational query, and edge vs. cloud. A small multilingual text-encoder plus classification head, not a generative model (Section 3).</td><td>Routing and classification only; never executes a command or composes an answer itself.</td></tr>
     <tr><td class="feat">On-device grounding (On-Device Index)</td><td>Retrieves relevant local context, vehicle manual, contacts, cached maps, vehicle state, for informational queries (Section 4).</td><td>Retrieval only. The control path never touches this index; a compromised or hallucinated retrieval result has no path to an action.</td></tr>
     <tr><td class="feat">Voice Assistant (LLM)</td><td>Composes grounded, natural-language answers to informational queries using retrieved context.</td><td>Language generation for informational responses only; cannot issue or trigger a vehicle command under any circumstance.</td></tr>
-    <tr><td class="feat">Deterministic Command Executor</td><td>Executes validated commands against a fixed intent schema (climate, media, navigation, calls).</td><td>The only component in this diagram permitted to actuate a vehicle function; the LLM cannot reach the vehicle except through it.</td></tr>
-    <tr><td class="feat">Response + Bulbul TTS</td><td>Speaks the final reply back to the driver, whichever path produced it: the LLM, the cloud, or a safety alert.</td><td>Speech synthesis and turn-taking only; it does not decide what to say.</td></tr>
+    <tr><td class="feat">Deterministic Command Executor</td><td>Executes validated commands against a fixed intent schema (climate, media, windows, seats, navigation, calls, message send).</td><td>The only component in this diagram permitted to actuate a vehicle function; the LLM cannot reach the vehicle except through it. Entity arguments (a contact, a saved destination) resolve through direct, schema-bounded lookups against their structured stores, never through the retrieval index. Motion-affecting or pinch-risk actuations (windows, seats) are speed-gated or confirm-gated.</td></tr>
+    <tr><td class="feat">Safety Narrator (priority arbitration)</td><td>Decides what gets spoken when: sequences competing outputs and lets a validated safety alert pre-empt any pending or in-progress speech. Drawn expanded in Figure 4; in Figure 1 it lives inside the response stage rather than as a separate box.</td><td>Ordering only. It never composes or alters content, and its one hard rule is asymmetric: it can delay or interrupt anything except a safety alert.</td></tr>
+    <tr><td class="feat">Response + Bulbul TTS</td><td>Speaks whatever the Safety Narrator hands it: the LLM's answer, the cloud's answer, or a pre-rendered safety clip (synthesized per language by Bulbul at OTA time, so no live TTS latency sits on the safety-speech path).</td><td>Speech synthesis and turn-taking only; it does not decide what to say. That decision belongs to the Safety Narrator.</td></tr>
     <tr><td class="feat">Safety Domain: ADAS perception + Driver monitoring (ASIL-D)</td><td>Certified, isolated detection of collision, lane, and blind-spot risk, and of drowsiness or distraction.</td><td>Detection only. Feeds one-way, read-only alerts; zero write paths back from the assistant into this domain.</td></tr>
     <tr><td class="feat">Cloud: Sarvam 30B / 105B reasoning + Live data</td><td>India-hosted overflow for complex, long-tail reasoning and live lookups (traffic, POI, fuel/EV, weather).</td><td>Reached only when the router explicitly overflows; never a dependency for core interaction.</td></tr>
   </table>
@@ -274,7 +283,7 @@
   <p>Six commitments that shape every decision in this document.</p>
   <ul class="clean">
     <li><strong>Offline-first.</strong> Core interaction works with zero connectivity; cloud is an enhancement, never a dependency.</li>
-    <li><strong>Latency-bounded.</strong> On-device actions are near-instant; safety announcements are immediate and pre-empt all other speech.</li>
+    <li><strong>Latency-bounded.</strong> On-device actions fire before the spoken confirmation finishes, so the action lands faster than the ~1s voice-to-voice figure; safety announcements are immediate and pre-empt all other speech.</li>
     <li><strong>Safety-isolated.</strong> The assistant lives in the cockpit domain, reading the ASIL-D domain through a one-way validated interface only.</li>
     <li><strong>Privacy by default.</strong> In-cabin audio and camera video are processed on-device and never leave the vehicle.</li>
     <li><strong>Indian-language-native.</strong> All 22 languages run on-device, so language quality never degrades offline.</li>
@@ -326,7 +335,7 @@
   <rect x="540" y="675" width="300" height="100" rx="10" fill="#e9effb" stroke="#2f5db3" stroke-width="2.5"/>
   <text x="690" y="710" text-anchor="middle" font-size="16" font-weight="bold" fill="#1a2333">EDGE (default)</text>
   <text x="690" y="736" text-anchor="middle" font-size="12" fill="#5a6472">handled on-device</text>
-  <text x="690" y="755" text-anchor="middle" font-size="12" fill="#5a6472">high confidence, near-instant</text>
+  <text x="690" y="755" text-anchor="middle" font-size="12" fill="#5a6472">high confidence, ~1s voice-to-voice</text>
 
   <!-- diamond 3 -->
   <polygon points="1075,505 1185,450 1295,505 1185,560" fill="white" stroke="#7a4fc0" stroke-width="2.5"/>
@@ -354,21 +363,73 @@
   <text x="115" y="892" font-size="13" fill="#5a6472">Roughly 90% of interactions resolve on-device with zero per-query cost. Highways, tunnels, and rural roads cannot guarantee connectivity,</text>
   <text x="115" y="913" font-size="13" fill="#5a6472">so cloud is treated strictly as an enhancement. Vehicle control and safety speech are never gated on a network call.</text>
 </svg><div class="figcap">Figure 2. The per-utterance routing policy. Vehicle control and safety are always edge; fresh data and heavy reasoning go to cloud when connected; offline, the assistant says so plainly and offers the on-device alternative.</div></div>
-  <p>The Intent Classifier itself is a small multilingual text-encoder model with a classification head, not a generative model and not the Voice Assistant LLM. It embeds the driver's utterance and classifies it against the fixed intent schema, or flags it as informational, producing a confidence score that feeds directly into the router: low confidence is what triggers cloud overflow or a confirm-before-act prompt. It deliberately reuses the same class of on-device embedding model that Section 4's retrieval uses, so the vehicle carries one shared embedding stack doing double duty rather than two separate models competing for the same NPU budget.</p>
+  <p>The Intent Classifier itself is a small multilingual text-encoder model with a classification head, not a generative model and not the Voice Assistant LLM. It embeds the driver's utterance and classifies it against the fixed intent schema, or flags it as informational, producing a confidence score that feeds directly into the router: low confidence is what triggers cloud overflow or a confirm-before-act prompt. It deliberately reuses the same class of on-device embedding model that Section 4's retrieval uses, so the vehicle carries one shared embedding stack doing double duty rather than two separate models competing for the same NPU budget. When the classifier cannot cleanly separate a command from a comment, an utterance like "it's hot in here", the tie always resolves toward confirm-before-act on the edge: the assistant asks, it never silently actuates, and it never ships an ambiguous control candidate to the cloud.</p>
   <div class="callout edge"><strong>Why an encoder, not another LLM.</strong> Classification against a fixed, finite label set is a bounded, testable operation: build a per-language, per-intent eval set and measure accuracy directly. Generation isn't bounded the same way. Keeping intent classification here, architecturally separate from the Voice Assistant LLM, keeps the highest-stakes decision in the pipeline, is this a command, measurable rather than probabilistic.</div>
+  <p>The "fixed intent schema" is a concrete object, not a figure of speech. Every utterance the classifier tags as a control command is matched against it before anything actuates: the schema enumerates exactly which intents exist, what arguments each accepts, and how each is gated. An utterance that matches no intent, or whose arguments fall outside the allowed set, is refused rather than guessed at, which is what turns "the system cannot invent an action" into a structural property instead of a hope. A representative slice:</p>
+  <pre class="schema"><span class="c">// Fixed intent schema, matched by the Deterministic Command Executor.</span>
+<span class="c">// A control command runs only if it matches an intent AND its slots validate.</span>
+{
+  <span class="c">// Comfort controls: bounded enums / numeric ranges, no free-text slot</span>
+  <span class="i">"climate.set"</span>: {
+    "slots": {
+      "zone":   ["driver", "passenger", "rear", "all"],
+      "temp_c": { "type": "int", "range": [16, 30] }
+    },
+    "gating": "none"
+  },
+  <span class="i">"media.volume"</span>: {
+    "slots": {
+      "action": ["up", "down", "set", "mute"],
+      "level":  { "type": "int", "range": [0, 40] }
+    },
+    "gating": "none"
+  },
+
+  <span class="c">// Motion-affecting: speed- and confirm-gated at the executor</span>
+  <span class="i">"window.move"</span>: {
+    "slots": {
+      "window":     ["driver", "passenger", "rear_left", "rear_right", "all"],
+      "action":     ["up", "down"],
+      "extent_pct": { "type": "int", "range": [0, 100] }
+    },
+    "gating": ["speed_gated", "confirm"]
+  },
+
+  <span class="c">// Parameterized invocations: entity resolved via a structured store, then confirmed</span>
+  <span class="i">"navigation.start"</span>: {
+    "slots": {
+      "destination": { "type": "entity", "resolve_via": "saved_destinations | poi_lookup" }
+    },
+    "gating": ["confirm"]
+  },
+  <span class="i">"call.place"</span>: {
+    "slots": {
+      "contact": { "type": "entity", "resolve_via": "contact_store" }
+    },
+    "gating": ["confirm"]
+  },
+  <span class="i">"message.send"</span>: {
+    "slots": {
+      "contact": { "type": "entity", "resolve_via": "contact_store" },
+      "body":    { "type": "string", "source": "dictated_only" }
+    },
+    "gating": ["confirm", "read_back_before_send"]
+  }
+}</pre>
+  <p>Two properties fall straight out of the shape. Comfort intents take only bounded enums or numeric ranges, so there is no free-text field for an injected instruction to hide in. The motion-affecting and parameterized intents each carry explicit gating: a speed check for windows and seats, a spoken confirmation before acting, and, for a dictated reply, a read-back before it sends. Entity arguments (a contact, a destination) resolve through direct structured lookups, never through the retrieval index of <a href="#rag">Section 4</a>, so a command's target can never come from free-text similarity search. The list here is a representative slice; the shipping schema also covers media playback, seats, and climate fan control on the same pattern.</p>
 </section>
 
 <section id="rag">
   <div class="kicker">Section 4</div><h2>On-Device Retrieval (RAG)</h2>
-  <p>On-device retrieval, retrieval-augmented generation in full, is what lets a sub-1GB model answer manual, destination, and contact questions accurately without memorizing them and without a network. Baking this content into model weights doesn't work: the vehicle manual runs to hundreds of pages, contacts and saved destinations are per-owner and change constantly, and a small on-device model has no room to memorize any of it reliably. Retrieval keeps the model's job narrow: read a handful of relevant passages, then compose an answer strictly from what's in front of it.</p>
-  <div class="figure"><svg viewBox="0 0 1400 900" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial, sans-serif">
+  <p>On-device retrieval, retrieval-augmented generation in full, grounds the assistant's informational answers in local content held in an On-Device Index. Four sources feed that index. The vehicle manual contributes owner-manual text and dashboard-warning guidance, chunked for retrieval. Saved destinations and contacts contribute the driver's own places and people. Cached map tiles contribute offline map data and saved routes. And a rolling snapshot of vehicle state contributes the current trip, cabin settings, and diagnostic readings. All four are chunked, embedded, and indexed on the vehicle.</p>
+  <div class="figure"><svg viewBox="0 0 1400 810" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial, sans-serif">
   <defs>
     <marker id="aDarkRAG" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="#333846"/></marker>
     <marker id="aGoldRAG" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="#b07d10"/></marker>
   </defs>
-  <rect width="1400" height="900" fill="white"/>
+  <rect width="1400" height="810" fill="white"/>
   <text x="700" y="40" text-anchor="middle" font-size="27" font-weight="bold" fill="#1a2333">Vaani Auto: On-Device Retrieval (RAG)</text>
-  <text x="700" y="68" text-anchor="middle" font-size="15" fill="#5a6472">Grounding informational answers in retrieved local content; control commands never enter this flow</text>
+  <text x="700" y="68" text-anchor="middle" font-size="15" fill="#5a6472">One standing On-Device Index, built from local content, grounds every informational answer</text>
 
   <!-- source content -->
   <g fill="#fdf6e2" stroke="#b07d10" stroke-width="2">
@@ -399,7 +460,7 @@
   <!-- index box -->
   <rect x="520" y="250" width="360" height="90" rx="10" fill="white" stroke="#2f5db3" stroke-width="2.5"/>
   <text x="700" y="290" text-anchor="middle" font-size="15.5" font-weight="bold" fill="#1a2333">On-Device Index</text>
-  <text x="700" y="315" text-anchor="middle" font-size="11" fill="#5a6472">built at OTA update; refreshed as data changes</text>
+  <text x="700" y="315" text-anchor="middle" font-size="11" fill="#5a6472">standing source, always available to the assistant</text>
 
   <!-- divider -->
   <line x1="60" y1="380" x2="1340" y2="380" stroke="#d4d7dd" stroke-width="1.5" stroke-dasharray="4,4"/>
@@ -446,52 +507,48 @@
   <rect x="1080" y="560" width="260" height="55" rx="10" fill="white" stroke="#2f5db3" stroke-width="2"/>
   <text x="1210" y="593" text-anchor="middle" font-size="13.5" font-weight="bold" fill="#1a2333">Bulbul TTS: Spoken Answer</text>
 
-  <!-- control command bypass -->
-  <rect x="60" y="650" width="300" height="55" rx="10" fill="white" stroke="#22283a" stroke-width="2"/>
-  <text x="210" y="673" text-anchor="middle" font-size="13" font-weight="bold" fill="#1a2333">Control command</text>
-  <text x="210" y="693" text-anchor="middle" font-size="10.5" fill="#5a6472">e.g. "roll down the window"</text>
-  <text x="397" y="637" text-anchor="middle" font-size="11" font-style="italic" fill="#5a6472">bypasses retrieval entirely</text>
-  <line x1="360" y1="677" x2="435" y2="677" stroke="#333846" stroke-width="2" marker-end="url(#aDarkRAG)"/>
-  <rect x="440" y="650" width="260" height="55" rx="10" fill="white" stroke="#2f5db3" stroke-width="2"/>
-  <text x="570" y="673" text-anchor="middle" font-size="13" font-weight="bold" fill="#1a2333">Deterministic Executor</text>
-  <text x="570" y="693" text-anchor="middle" font-size="10" fill="#5a6472">fixed schema, see Architecture &amp; Routing</text>
-
   <!-- callout -->
-  <rect x="60" y="740" width="1280" height="110" rx="12" fill="#f4f5f7" stroke="#d4d7dd"/>
-  <text x="85" y="772" font-size="14.5" font-weight="bold" fill="#1a2333">Two flows, one boundary</text>
-  <text x="85" y="798" font-size="12.5" fill="#5a6472">Indexing happens once in the background; retrieval happens fresh on every informational turn, both entirely on-device.</text>
-  <text x="85" y="818" font-size="12.5" fill="#5a6472">Control commands never enter this diagram: they run through the fixed intent schema, completely bypassing the index.</text>
+  <rect x="60" y="650" width="1280" height="96" rx="12" fill="#f4f5f7" stroke="#d4d7dd"/>
+  <text x="85" y="681" font-size="14.5" font-weight="bold" fill="#1a2333">One standing index, always available</text>
+  <text x="85" y="707" font-size="12.5" fill="#5a6472">The On-Device Index is built once in the background and refreshed as data changes, so the assistant can consult it on any informational turn.</text>
+  <text x="85" y="727" font-size="12.5" fill="#5a6472">Retrieval runs fresh per turn; indexing and retrieval both stay entirely on-device, never a network call.</text>
 
   <!-- legend -->
-  <line x1="95" y1="865" x2="150" y2="865" stroke="#b07d10" stroke-width="2.5" stroke-dasharray="6,4" marker-end="url(#aGoldRAG)"/>
-  <text x="162" y="870" font-size="13" fill="#333846">local context / retrieved data</text>
-  <line x1="420" y1="865" x2="475" y2="865" stroke="#333846" stroke-width="2.5" marker-end="url(#aDarkRAG)"/>
-  <text x="487" y="870" font-size="13" fill="#333846">on-device flow, build or per-turn</text>
-  <rect x="800" y="857" width="16" height="16" fill="#f4edfc" stroke="#7a4fc0" stroke-width="2"/>
-  <text x="826" y="870" font-size="13" fill="#333846">LLM: composes only from retrieved text</text>
-</svg><div class="figcap">Figure 3. On-device retrieval grounds informational answers in local content: vehicle manual, saved destinations and contacts, cached map tiles, and current vehicle state, indexed once and searched fresh per turn. Control commands never touch this index; they run through the fixed intent schema straight to the Deterministic Executor. Gold dashed is local context and retrieved data, solid dark is on-device flow, purple is the LLM.</div></div>
-  <p>Indexing happens once, not per query. The vehicle manual, saved destinations and contacts, cached map tiles, and a snapshot of current vehicle state are chunked and indexed on-device at OTA update time, with contacts and destinations refreshed as they change. A driver's question is embedded on-device, matched against that index by similarity search, and the top few passages are handed to the LLM to compose a spoken answer from, not to reason without bounds.</p>
-  <div class="callout edge"><strong>Retrieval never touches the control plane.</strong> A question about a dashboard warning light gets an answer grounded in retrieved manual text. A command like "roll down the rear window" never touches the index at all; it goes straight from the Intent Classifier through the fixed schema to the Deterministic Executor (see <a href="#routing">Architecture &amp; Routing</a>). The same separation that keeps hallucinations and prompt injection out of the control plane keeps retrieval out of it too.</div>
-  <p>The on-device embedding model doing the similarity search here is the same one behind the Intent Classifier's confidence score (see <a href="#routing">Architecture &amp; Routing</a>): one shared embedding stack, two jobs, rather than two separate models on an already-tight NPU budget.</p>
-  <p>Two things here are assumptions, not measurements, and are logged as open items rather than settled facts. Retrieval overhead is currently covered by the same "Grounding + executor, 40ms" line in the latency budget (see <a href="#latency">Latency</a>) that existed before this section did, not independently re-measured for an actual embedding and similarity-search step. And even with intent classification and retrieval sharing one embedding model, its footprint isn't yet broken out from the sub-1GB speech-stack figure, so total NPU memory pressure across STT, translation, TTS, and the shared embedding model together is still an assumption, not a bill of materials.</p>
+  <line x1="95" y1="772" x2="150" y2="772" stroke="#b07d10" stroke-width="2.5" stroke-dasharray="6,4" marker-end="url(#aGoldRAG)"/>
+  <text x="162" y="777" font-size="13" fill="#333846">local context / retrieved data</text>
+  <line x1="420" y1="772" x2="475" y2="772" stroke="#333846" stroke-width="2.5" marker-end="url(#aDarkRAG)"/>
+  <text x="487" y="777" font-size="13" fill="#333846">on-device flow, build or per-turn</text>
+  <rect x="800" y="764" width="16" height="16" fill="#f4edfc" stroke="#7a4fc0" stroke-width="2"/>
+  <text x="826" y="777" font-size="13" fill="#333846">LLM: composes only from retrieved text</text>
+</svg><div class="figcap">Figure 3. On-device retrieval grounds informational answers in local content: the vehicle manual, saved destinations and contacts, cached map tiles, and current vehicle state are chunked and indexed once into a standing On-Device Index the assistant can consult on any informational turn. Per turn, the driver's question is embedded on-device, matched against the index by similarity search, and the top passages are handed to the LLM, which composes a spoken answer only from that retrieved text. Gold dashed is local context and retrieved data, solid dark is on-device flow, purple is the LLM.</div></div>
+  <p>Indexing happens once, not per query: the four sources are chunked and indexed on-device at OTA update time, with contacts and destinations refreshed as they change. On each informational turn, the driver's question is embedded on-device, matched against the index by similarity search, and the top few passages are handed to the Voice Assistant (LLM), a compact on-device model, which composes a spoken answer strictly from that retrieved text rather than reasoning without bounds. Because the index is always resident on the vehicle, this grounding costs no network round trip.</p>
+  <p>Concretely, these are the kinds of questions the On-Device Index answers, each grounded in a different source and each answerable with zero connectivity:</p>
+  <ul class="clean">
+    <li>"What does this flashing orange engine light mean, and is it safe to keep driving?" grounded in the <strong>vehicle manual and warning guidance</strong>.</li>
+    <li>"How do I turn on the rear defogger?" grounded in the <strong>vehicle manual</strong>, retrieved as a how-to passage rather than triggering an action.</li>
+    <li>"What's the address I saved for the office?" grounded in <strong>saved destinations</strong>, read back as information, distinct from the command "take me to the office".</li>
+    <li>"Is there a fuel stop on my saved route to Lonavala?" grounded in <strong>cached map tiles and saved routes</strong>, so it still answers in a dead zone.</li>
+    <li>"What's my tyre pressure, and is that in the normal range?" grounded in the <strong>vehicle-state snapshot</strong> for the reading and the <strong>manual</strong> for the safe range, one answer drawn from two sources.</li>
+  </ul>
+  <p>The on-device embedding model doing the similarity search is the same one behind the Intent Classifier's confidence score (see <a href="#routing">Architecture &amp; Routing</a>): one shared embedding stack, two jobs, rather than two separate models on an already-tight NPU budget.</p>
 </section>
 
 <section id="features">
   <div class="kicker">Section 5</div><h2>Feature Catalog</h2>
-  <p>Each feature's placement follows the four routing levers (latency, privacy, offline availability, capability). Latency is voice-to-voice: end of utterance to first spoken syllable (see <a href="#latency">Latency</a>). The portfolio North Star pair is voice turns per drive and first-try task success rate.</p>
+  <p>Each feature's placement follows the four routing levers (latency, privacy, offline availability, capability). Latency is voice-to-voice: end of utterance to first spoken syllable (see <a href="#latency">Latency</a>). The portfolio North Star pair is successful voice tasks per drive and first-try task success rate: volume that only counts when the task lands, so retries and failures cannot inflate it.</p>
   <table>
     <tr><th style="width:15%">Feature</th><th style="width:9%">Runs on</th><th style="width:28%">Why this placement</th><th style="width:15%">Latency the user feels</th><th style="width:33%">How we measure success</th></tr>
-    <tr><td class="feat">Wake word invocation</td><td><span class="tag edge">Edge</span></td><td>Always-on listening cannot depend on a network, must sip power, and raw audio never leaves the vehicle.</td><td>Imperceptible; listening within ~100ms</td><td><ul><li>False accepts per 24h (&lt;1), false rejects (&lt;5%)</li><li>Activations per drive</li></ul></td></tr>
+    <tr><td class="feat">Wake word invocation</td><td><span class="tag edge">Edge</span></td><td>Always-on listening cannot depend on a network, must sip power, and raw audio never leaves the vehicle.</td><td>Imperceptible; listening within ~150ms</td><td><ul><li>False accepts per 24h (&lt;1), false rejects (&lt;5%)</li><li>Activations per drive</li></ul></td></tr>
     <tr><td class="feat">Cockpit control: climate, media, windows, seats</td><td><span class="tag edge">Edge</span></td><td>A control command that dies in a tunnel is unacceptable; the deterministic executor needs no cloud intelligence.</td><td>~1.05s typical; action fires in parallel with spoken confirmation</td><td><ul><li>First-try command success (&gt;95%), wrong actions ~0</li><li>Voice share of cabin adjustments vs physical controls</li></ul></td></tr>
-    <tr><td class="feat">Multilingual, mixed-language conversation</td><td><span class="tag edge">Edge</span></td><td>Language is core, not a connected extra; the full Indic stack fits the NPU in under 1GB.</td><td>Adds ~200ms per non-English turn</td><td><ul><li>WER by language and for mixed-language speech</li><li>Task success parity across languages</li></ul></td></tr>
+    <tr><td class="feat">Multilingual, mixed-language conversation</td><td><span class="tag edge">Edge</span></td><td>Language is core, not a connected extra; the full Indic speech stack fits the NPU in under 1GB.</td><td>Adds ~200ms per non-English turn</td><td><ul><li>WER by language and for mixed-language speech</li><li>Task success parity across languages</li></ul></td></tr>
     <tr><td class="feat">Offline navigation</td><td><span class="tag edge">Edge</span></td><td>Starting navigation is a control action; cached maps and saved destinations keep it fully offline-capable.</td><td>~1s to route confirmation</td><td><ul><li>Destination resolution accuracy on Indian place names</li><li>Share of nav sessions started by voice</li></ul></td></tr>
     <tr><td class="feat">Live traffic, POI, fuel and EV search</td><td><span class="tag hybrid">Hybrid</span></td><td>Intent parses on edge; freshness only exists in cloud; offline gets the cached alternative, spoken plainly.</td><td>~3s; spoken acknowledgement fires immediately at routing, so the wait reads as active</td><td><ul><li>Task completion: driver acts on the result</li><li>Fallback rate; timeout rate &lt;2%</li></ul></td></tr>
-    <tr><td class="feat">Spoken ADAS safety awareness</td><td><span class="tag edge">Edge</span></td><td>Safety speech can never wait on a network; read from the validated one-way feed, pre-empts all other audio.</td><td>&lt;300ms from validated event to speech</td><td><ul><li>p99 event-to-speech latency; pre-emption correctness</li><li>Mute / opt-out rate (annoyance signal)</li></ul></td></tr>
+    <tr><td class="feat">Spoken ADAS safety awareness</td><td><span class="tag edge">Edge</span></td><td>Safety speech can never wait on a network; read from the validated one-way feed, pre-empts all other audio. Alert phrases are pre-rendered per language at OTA time, so the 300ms budget covers validation, arbitration, and playback, not live TTS.</td><td>&lt;300ms from validated event to speech</td><td><ul><li>p99 event-to-speech latency; pre-emption correctness</li><li>Mute / opt-out rate (annoyance signal)</li></ul></td></tr>
     <tr><td class="feat">Drowsiness and distraction interventions</td><td><span class="tag edge">Edge</span></td><td>Cabin video never leaves the vehicle: privacy, DPDP, and latency in one. The DMS detects; Vaani voices the response.</td><td>Check-in within 1 to 2s of a confirmed pattern</td><td><ul><li>Intervention acceptance rate; false interventions</li><li>Reduction in repeat drowsiness events</li></ul></td></tr>
-    <tr><td class="feat">Calls, message read-aloud, dictated replies</td><td><span class="tag edge">Edge</span></td><td>Contacts and message content are personal data that stay on device; content can never trigger a vehicle action.</td><td>~1s per turn</td><td><ul><li>Contact resolution accuracy on Indian names</li><li>Reply send-through rate; injection block rate 100% on adversarial evals</li></ul></td></tr>
+    <tr><td class="feat">Calls, message read-aloud, dictated replies</td><td><span class="tag edge">Edge</span></td><td>Contacts and message content are personal data that stay on device; content can never trigger a vehicle action. A dictated reply leaves the vehicle only through the executor's message-send schema action, confirmed aloud before sending.</td><td>~1s per turn</td><td><ul><li>Contact resolution accuracy on Indian names</li><li>Reply send-through rate; injection block rate 100% on adversarial evals</li></ul></td></tr>
     <tr><td class="feat">Vehicle manual Q&amp;A</td><td><span class="tag edge">Edge</span></td><td>Answered via on-device retrieval (RAG, see <a href="#rag">On-Device Retrieval</a>) over static local manual content; a warning-light question on a remote highway is when connectivity is least likely.</td><td>1 to 1.5s</td><td><ul><li>Answer accuracy on a curated eval set</li><li>Deflection of service-centre calls</li></ul></td></tr>
-    <tr><td class="feat">Open-ended knowledge and reasoning</td><td><span class="tag cloud">Cloud</span></td><td>Exceeds the sub-1GB on-device stack; non-urgent by definition, so the round trip is an acceptable trade.</td><td>~3s; spoken acknowledgement immediate; graceful fallback still at 3 to 4s, worth tightening the margin</td><td><ul><li>Overflow share of queries (~10%, trending down)</li><li>Completion without fallback; cloud cost per drive</li></ul></td></tr>
-    <tr><td class="feat">Proactive trip briefing</td><td><span class="tag hybrid">Hybrid</span></td><td>Assembled on edge via on-device retrieval over vehicle state and cached route; enriched with live data when connected, leaner offline.</td><td>Starts &lt;1s after prompt acceptance</td><td><ul><li>Briefing acceptance rate</li><li>Action-through on suggestions</li></ul></td></tr>
+    <tr><td class="feat">Open-ended knowledge and reasoning</td><td><span class="tag cloud">Cloud</span></td><td>Exceeds the compact on-device model's reasoning depth; non-urgent by definition, so the round trip is an acceptable trade.</td><td>~3.2s; spoken acknowledgement immediate; delayed-response update if none lands within 4s of the ack</td><td><ul><li>Overflow share of queries (~10%, trending down)</li><li>Completion without fallback; cloud cost per drive</li></ul></td></tr>
+    <tr><td class="feat">Proactive trip briefing</td><td><span class="tag hybrid">Hybrid</span></td><td>Assembled on edge via on-device retrieval over vehicle state and cached route; enriched with live data when connected, leaner offline. Triggered by trip-start context rather than an utterance; the offer passes through the same confirm-before-act gate, and the briefing opens from edge content immediately, weaving live data in as it returns.</td><td>Starts &lt;1s after prompt acceptance</td><td><ul><li>Briefing acceptance rate</li><li>Action-through on suggestions</li></ul></td></tr>
   </table>
   <p>Two patterns: everything touching vehicle controls, safety, or personal data runs on edge without exception, and every cloud-touching feature has a defined offline behaviour, so nothing disappears when the network does.</p>
 </section>
@@ -504,38 +561,38 @@
   </defs>
   <rect width="1400" height="980" fill="white"/>
   <text x="700" y="40" text-anchor="middle" font-size="27" font-weight="bold" fill="#1a2333">Vaani Auto: Safety Architecture (Swimlanes)</text>
-  <text x="700" y="68" text-anchor="middle" font-size="15" fill="#5a6472">The LLM never enters the ASIL-D control loop: it reads validated state and narrates it</text>
+  <text x="700" y="68" text-anchor="middle" font-size="15" fill="#5a6472">The assistant reads validated driver-facing warnings and narrates them; it never enters the ASIL-D control loop</text>
 
   <!-- ASIL domain -->
   <rect x="60" y="100" width="1290" height="260" rx="14" fill="#fdeee4" stroke="#c2571f" stroke-width="2.5"/>
   <text x="88" y="133" font-size="16.5" font-weight="bold" fill="#c2571f">ASIL-D SAFETY DOMAIN</text>
   <text x="88" y="155" font-size="12.5" font-style="italic" fill="#8a5a3a">functionally safe, certified, isolated from the assistant</text>
   <rect x="105" y="185" width="370" height="120" rx="10" fill="white" stroke="#c2571f" stroke-width="1.5"/>
-  <text x="290" y="228" text-anchor="middle" font-size="15.5" font-weight="bold" fill="#1a2333">ADAS</text>
-  <text x="290" y="254" text-anchor="middle" font-size="12.5" fill="#5a6472">forward collision, lane departure,</text>
-  <text x="290" y="273" text-anchor="middle" font-size="12.5" fill="#5a6472">blind-spot, speed limit</text>
+  <text x="290" y="221" text-anchor="middle" font-size="15" font-weight="bold" fill="#1a2333">ADAS Driver Warnings</text>
+  <text x="290" y="247" text-anchor="middle" font-size="12" fill="#5a6472">forward collision, lane departure, blind-spot</text>
+  <text x="290" y="288" text-anchor="middle" font-size="12" font-weight="bold" fill="#2f5db3">warning events, narrated by Vaani</text>
   <rect x="515" y="185" width="370" height="120" rx="10" fill="white" stroke="#c2571f" stroke-width="1.5"/>
-  <text x="700" y="228" text-anchor="middle" font-size="15.5" font-weight="bold" fill="#1a2333">Driver Monitoring System</text>
-  <text x="700" y="254" text-anchor="middle" font-size="12.5" fill="#5a6472">drowsiness, distraction,</text>
-  <text x="700" y="273" text-anchor="middle" font-size="12.5" fill="#5a6472">gaze-off-road (on-device camera)</text>
-  <rect x="925" y="185" width="370" height="120" rx="10" fill="white" stroke="#c2571f" stroke-width="1.5"/>
-  <text x="1110" y="228" text-anchor="middle" font-size="15.5" font-weight="bold" fill="#1a2333">Sensor Fusion</text>
-  <text x="1110" y="254" text-anchor="middle" font-size="12.5" fill="#5a6472">combines perception signals</text>
-  <text x="1110" y="273" text-anchor="middle" font-size="12.5" fill="#5a6472">into validated safety state</text>
+  <text x="700" y="221" text-anchor="middle" font-size="15" font-weight="bold" fill="#1a2333">Driver Monitoring System</text>
+  <text x="700" y="247" text-anchor="middle" font-size="12" fill="#5a6472">drowsiness, distraction, gaze-off-road</text>
+  <text x="700" y="288" text-anchor="middle" font-size="12" font-weight="bold" fill="#2f5db3">warning events, narrated by Vaani</text>
+  <rect x="925" y="185" width="370" height="120" rx="10" fill="#fdeee4" stroke="#c2571f" stroke-width="1.5"/>
+  <text x="1110" y="221" text-anchor="middle" font-size="15" font-weight="bold" fill="#1a2333">ADAS Control Interventions</text>
+  <text x="1110" y="247" text-anchor="middle" font-size="12" fill="#5a6472">adaptive cruise, automatic emergency braking</text>
+  <text x="1110" y="288" text-anchor="middle" font-size="12" font-weight="bold" fill="#c2571f">self-actuating; never feeds the assistant</text>
 
-  <!-- connector 1 -->
-  <line x1="705" y1="360" x2="705" y2="385" stroke="#333846" stroke-width="2.5" marker-end="url(#aDark03)"/>
-  <text x="722" y="380" font-size="12" fill="#5a6472">validated safety state</text>
+  <!-- warning events feed the interface: manifold drawn from the two warning boxes only -->
+  <g stroke="#333846" stroke-width="2.5" fill="none">
+    <line x1="290" y1="305" x2="290" y2="335"/>
+    <line x1="700" y1="305" x2="700" y2="335"/>
+    <line x1="290" y1="335" x2="700" y2="335"/>
+    <line x1="495" y1="335" x2="495" y2="385" marker-end="url(#aDark03)"/>
+  </g>
+  <text x="512" y="370" font-size="12" fill="#5a6472">validated warning events</text>
 
   <!-- interface -->
   <rect x="300" y="390" width="810" height="70" rx="10" fill="white" stroke="#22283a" stroke-width="2.5"/>
   <text x="705" y="420" text-anchor="middle" font-size="16" font-weight="bold" fill="#1a2333">VALIDATED READ-ONLY INTERFACE</text>
   <text x="705" y="444" text-anchor="middle" font-size="12.5" fill="#5a6472">one-way; no control or write path back into the safety domain</text>
-  <g stroke="#c2571f" stroke-width="3" fill="none">
-    <circle cx="1170" cy="425" r="15"/>
-    <line x1="1159" y1="436" x2="1181" y2="414"/>
-  </g>
-  <text x="1195" y="430" font-size="12.5" fill="#c2571f">no write path</text>
 
   <!-- connector 2 -->
   <line x1="705" y1="460" x2="705" y2="485" stroke="#333846" stroke-width="2.5" marker-end="url(#aDark03)"/>
@@ -573,24 +630,26 @@
   <rect x="950" y="865" width="370" height="75" rx="10" fill="#f4f5f7" stroke="#d4d7dd"/>
   <text x="1135" y="895" text-anchor="middle" font-size="14" font-weight="bold" fill="#1a2333">No direct actuation</text>
   <text x="1135" y="920" text-anchor="middle" font-size="12" fill="#5a6472">assistant narrates; it never controls</text>
-</svg><div class="figcap">Figure 4. Domain isolation: detection lives in the certified ASIL-D domain; the assistant reads validated state through a one-way interface and narrates it. No write path exists, and the assistant has no actuation capability, so it cannot become a remote actuation vector either.</div></div>
+</svg><div class="figcap">Figure 4. Domain isolation. Inside the certified safety domain, two kinds of function live side by side: driver-facing warnings (forward collision, lane departure, blind-spot, and the driver-monitoring alerts), which the assistant reads through a one-way interface and speaks, and self-actuating control interventions (adaptive cruise, automatic emergency braking), which stay entirely inside the ASIL-D domain and never feed the assistant. No write path exists back into the domain, and the assistant has no actuation capability, so it cannot become a remote actuation vector either. The Safety Narrator shown here is the arbitration function that sits inside Figure 1's response stage, expanded at this zoom level.</div></div>
+  <p>A word on the "ASIL-D" label. It names the safety rating of the strictest functions in that domain, the self-actuating interventions like automatic emergency braking, not every box inside it; driver monitoring and the driver-facing warnings are each certified at their own levels. The label simply marks where the highest-rated functions live and the isolation they demand of the assistant: Vaani reads the validated warnings and speaks them, and it neither triggers nor rides inside any of the control functions.</p>
   <p>One property does most of the work here, twice over: the control plane (what actions are permitted) is separated from the content plane (the language the model reads). Vehicle commands execute only through a fixed, validated intent schema, so neither a hallucinated instruction nor one smuggled into a read-aloud message, place name, or search result can cause an action.</p>
   <ul class="clean">
     <li><strong>Confidence gating.</strong> Below threshold, confirm or decline; never guess on a control or safety action.</li>
+    <li><strong>Actuation gating.</strong> The executor's schema covers cockpit comfort and convenience functions only. Motion-affecting or pinch-risk actuations, windows and seats, are speed-gated and confirm-gated; nothing in the schema can reach an ASIL-rated function.</li>
     <li><strong>Grounded and honest.</strong> Answers are grounded on retrieved data (see <a href="#rag">On-Device Retrieval</a>); when uncertain or offline, the assistant says so plainly. It never fabricates.</li>
-    <li><strong>Priority arbitration.</strong> Safety announcements always pre-empt lower-priority speech.</li>
-    <li><strong>Data locality.</strong> Audio and cabin video are processed on-device; cloud overflow carries de-identified text only, over encrypted channels, to India-hosted infrastructure. DPDP-ready with attestation and an audit trail.</li>
+    <li><strong>Priority arbitration.</strong> Owned by the Safety Narrator (Figure 4; inside Figure 1's response stage): safety announcements always pre-empt lower-priority speech, and nothing can pre-empt them.</li>
+    <li><strong>Data locality.</strong> Audio and cabin video are processed on-device; cloud overflow carries de-identified text, over encrypted channels, to India-hosted infrastructure. One deliberate exception: live-data lookups (traffic, POI, fuel and EV) attach coarse, query-scoped location, used ephemerally, never stored, and never linked to an identity, because a nearby search is impossible without it. DPDP-ready with attestation and an audit trail.</li>
     <li><strong>Secure updates.</strong> Signed, attested OTA model updates with rollback.</li>
   </ul>
 </section>
 
 <section id="latency">
   <div class="kicker">Section 7</div><h2>Latency</h2>
-  <p>The number the driver feels is voice-to-voice: end of utterance to first spoken syllable. STT and TTS both stream, so each stage counts by time to first byte. The edge path lands around a second. Cloud overflow now budgets roughly 3s end to end, reserved for non-urgent queries; the moment the router commits to a cloud call it fires an immediate spoken acknowledgement, "checking this over the internet", so the wait reads as active rather than silent.</p>
+  <p>The number the driver feels is voice-to-voice: end of utterance to first spoken syllable. STT and TTS both stream, so each stage counts by time to first byte. The edge path lands around a second. Cloud overflow now budgets roughly 3.2s end to end, reserved for non-urgent queries; the moment the router commits to a cloud call it fires an immediate spoken acknowledgement, "checking this over the internet", so the wait reads as active rather than silent.</p>
+  <p>The waterfall's edge path is drawn for the command case. Informational edge turns, a manual question, for example, add one stage the chart does not show: the on-device LLM composing the grounded answer, budgeted at 200 to 450ms to first token. That is what stretches manual Q&amp;A to the 1 to 1.5s quoted in the feature catalog, and it is a budget estimate that stays open until the answer-composition model is selected (see Appendix).</p>
+  <p>The fallback is a delayed-response update, not a hard cut-off, and its clock starts at the acknowledgement, not at the end of the driver's utterance. Once the assistant has said "checking this over the internet", a typical cloud answer lands about 2 to 2.5s later, so most cloud turns finish before the fallback is ever in play. If four seconds pass after that acknowledgement with no answer, Vaani says so plainly, something like "this is taking longer than usual, sit tight while I fetch it", and keeps waiting; it never fabricates an answer and never silently gives up. The remaining open risk is the tail: typical cloud latency is comfortable, but no p95 or p99 figure exists yet to size how often the delayed-response update actually fires.</p>
   <div class="figure"><svg viewBox="0 0 1400 860" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial, sans-serif">
   <rect width="1400" height="860" fill="white"/>
-  <!-- fallback timeout zone, drawn first so it sits behind everything -->
-  <rect x="1047.5" y="120" width="302.5" height="520" fill="#c2571f" opacity="0.07"/>
   <text x="700" y="40" text-anchor="middle" font-size="27" font-weight="bold" fill="#1a2333">Vaani Auto: Voice-to-Voice Latency Waterfall</text>
   <text x="700" y="68" text-anchor="middle" font-size="15" fill="#5a6472">From end of driver speech to first spoken syllable of the response; STT streams during speech, wake word precedes the turn</text>
 
@@ -617,12 +676,12 @@
     <text x="1198.8" y="662">3.5 s</text>
     <text x="1350" y="662">4 s</text>
   </g>
-  <text x="1055" y="142" font-size="12" font-weight="bold" fill="#c2571f">3 to 4s: fallback timeout zone</text>
-  <text x="1055" y="160" font-size="10.5" font-style="italic" fill="#c2571f">cloud typical now lands right at this edge</text>
+  <text x="1345" y="142" text-anchor="end" font-size="12" font-weight="bold" fill="#1a2333">typical cloud answer ~3.21s</text>
+  <text x="1345" y="160" text-anchor="end" font-size="10.5" font-style="italic" fill="#5a6472">delayed-response timer runs from the spoken ack, fires 4s later (off this axis)</text>
 
   <!-- EDGE PATH -->
   <text x="140" y="172" font-size="15" font-weight="bold" fill="#2f5db3">EDGE PATH</text>
-  <text x="255" y="172" font-size="12.5" fill="#7a828d">cockpit command, about 90% of turns</text>
+  <text x="255" y="172" font-size="12.5" fill="#7a828d">shown for a cockpit command; ~90% of all turns resolve on-device</text>
   <g stroke="white" stroke-width="1.5">
     <rect x="140" y="185" width="90.75" height="46" fill="#9aa1ab"/>
     <rect x="230.75" y="185" width="60.5" height="46" fill="#2f5db3"/>
@@ -661,7 +720,8 @@
     <rect x="351.75" y="405" width="15.125" height="46" fill="#7a4fc0"/>
     <rect x="366.875" y="405" width="30.25" height="46" fill="#74b98c"/>
     <rect x="397.125" y="405" width="605" height="46" fill="#1e7d3e"/>
-    <rect x="1002.125" y="405" width="60.5" height="46" fill="#22283a"/>
+    <rect x="1002.125" y="405" width="30.25" height="46" fill="#74b98c"/>
+    <rect x="1032.375" y="405" width="78.65" height="46" fill="#22283a"/>
   </g>
   <g fill="white" text-anchor="middle">
     <text x="185" y="424" font-size="11">VAD endpoint</text>
@@ -672,25 +732,28 @@
     <text x="322" y="441" font-size="10">200ms*</text>
     <text x="700" y="424" font-size="11.5">Cloud LLM first tokens (Sarvam 30B / 105B)</text>
     <text x="700" y="441" font-size="10">~2000ms, published TTFT</text>
-    <text x="1032" y="424" font-size="10.5">return + TTS</text>
-    <text x="1032" y="441" font-size="10">200ms</text>
+    <text x="1071.7" y="424" font-size="10.5">Bulbul TTS</text>
+    <text x="1071.7" y="441" font-size="10">260ms</text>
   </g>
-  <text x="1080" y="433" font-size="13.5" font-weight="bold" fill="#1a2333">first audio ~3.05s</text>
-  <text x="1080" y="452" font-size="11.5" fill="#5a6472">range 2.9s to 3.3s, LLM dominates</text>
+  <text x="1125" y="433" font-size="13.5" font-weight="bold" fill="#1a2333">first audio ~3.21s</text>
+  <text x="1125" y="452" font-size="11.5" fill="#5a6472">range ~3.0s to 3.5s, LLM dominates</text>
   <!-- cloud leaders -->
   <g stroke="#9aa1ab" stroke-width="1">
     <line x1="359" y1="451" x2="359" y2="476"/>
     <line x1="382" y1="451" x2="382" y2="494"/>
+    <line x1="1017.25" y1="451" x2="1017.25" y2="476"/>
   </g>
   <text x="364" y="480" font-size="11.5" fill="#5a6472">Intent + routing, 50ms</text>
   <text x="387" y="498" font-size="11.5" fill="#5a6472">Network send (de-identified text, warm TLS), 100ms</text>
+  <text x="1017.25" y="480" text-anchor="middle" font-size="11.5" fill="#5a6472">Network return, 100ms</text>
 
   <text x="140" y="670" font-size="10.5" font-style="italic" fill="#7a828d">* Mayura fires only for non-English or mixed-language turns; totals shown assume it fires. English-only turns skip it and land faster.</text>
 
   <!-- immediate spoken acknowledgement for cloud-routed queries -->
-  <rect x="150" y="525" width="700" height="55" rx="10" fill="#eef3fc" stroke="#2f5db3" stroke-width="1.5"/>
+  <rect x="150" y="525" width="700" height="72" rx="10" fill="#eef3fc" stroke="#2f5db3" stroke-width="1.5"/>
   <text x="168" y="548" font-size="12.5" font-weight="bold" fill="#1a2333">Immediate spoken ack, on-device Bulbul TTS: "Checking this over the internet..."</text>
-  <text x="168" y="568" font-size="11" fill="#5a6472">Fires at ~750ms when the router commits to cloud. Real answer streams in the background, landing ~3.05s.</text>
+  <text x="168" y="567" font-size="11" fill="#5a6472">Router commits ~750ms; first ack audio ~1.0s after Bulbul's 260ms first byte. The real answer lands ~3.21s.</text>
+  <text x="168" y="585" font-size="11" fill="#5a6472">That is ~2 to 2.5s after the ack; if none lands within 4s of the ack, a delayed-response update speaks and Vaani keeps waiting.</text>
 
   <!-- callouts -->
   <rect x="60" y="700" width="630" height="120" rx="12" fill="#f4f5f7" stroke="#d4d7dd"/>
@@ -698,14 +761,15 @@
   <text x="85" y="758" font-size="12.5" fill="#5a6472">Endpointing and TTS first byte bracket every turn regardless of path.</text>
   <text x="85" y="778" font-size="12.5" fill="#5a6472">The middle stages are already small; optimise the brackets first.</text>
   <rect x="730" y="700" width="630" height="120" rx="12" fill="#f4f5f7" stroke="#d4d7dd"/>
-  <text x="755" y="732" font-size="14.5" font-weight="bold" fill="#1a2333">Response design thresholds</text>
-  <text x="755" y="758" font-size="12.5" fill="#5a6472">Under 1s reads as instant on the edge. Cloud queries now run close to 3s typically,</text>
-  <text x="755" y="778" font-size="12.5" fill="#5a6472">so an immediate spoken ack keeps the wait active. Fallback timeout stays at 3 to 4s.</text>
-</svg><div class="figcap">Figure 5. Stage-by-stage budget for both paths. Endpointing and TTS first byte bracket every turn; cloud-routed queries get an immediate spoken acknowledgement the moment the router commits to cloud (~750ms), and the assistant still times out into the graceful spoken fallback at 3 to 4s, now close to the cloud path's typical latency.</div></div>
+  <text x="755" y="728" font-size="14.5" font-weight="bold" fill="#1a2333">Response design thresholds</text>
+  <text x="755" y="752" font-size="12.5" fill="#5a6472">Under 1s reads as instant on the edge. Cloud queries run around 3.2s typically, so an</text>
+  <text x="755" y="772" font-size="12.5" fill="#5a6472">immediate spoken ack keeps the wait active. The fallback is a delayed-response update,</text>
+  <text x="755" y="792" font-size="12.5" fill="#5a6472">timed from that ack: if no answer lands within 4s of it, Vaani says so and keeps waiting.</text>
+</svg><div class="figcap">Figure 5. Stage-by-stage budget for both paths, drawn for the command case on the edge; informational edge turns add an on-device LLM generation stage of 200 to 450ms (see text). The cloud response leg is a network return plus the same local Bulbul TTS used on the edge, for a typical ~3.21s to first audio. Cloud-routed queries get an immediate spoken acknowledgement the moment the router commits (~750ms commit; first ack audio ~1.0s); the fallback is a delayed-response update timed from that acknowledgement, speaking if no answer lands within 4s of it.</div></div>
 </section>
 
 <section id="decisions">
-  <div class="kicker">Section 8</div><h2>Decisions &amp; Roadmap</h2>
+  <div class="kicker">Section 8</div><h2>Decisions & Reasoning</h2>
   <table>
     <tr><th style="width:13%">Decision</th><th style="width:19%">Options considered</th><th style="width:20%">Choice</th><th style="width:24%">Pros</th><th style="width:24%">Cons</th></tr>
     <tr><td class="dec">Overall architecture</td><td>Cloud-first thin client; edge-only; edge-first hybrid</td><td>Edge-first hybrid, cloud as overflow<span class="why">Cloud-first was rejected outright: an assistant that dies in a tunnel is not shippable in a car.</span></td>
@@ -714,24 +778,22 @@
     <tr><td class="dec">LLM and the safety loop</td><td>LLM actuates functions (agentic); LLM read-only (narrates)</td><td>Read-only, out of the safety loop</td>
       <td class="pros"><ul><li>Certifiable safety</li><li>Eliminates hallucinated actions</li></ul></td>
       <td class="cons"><ul><li>No agentic flexibility on safety functions<span class="why">Which is correct: an LLM must never be on the ASIL path.</span></li></ul></td></tr>
-    <tr><td class="dec">Command handling</td><td>Free-form LLM generation; constrained intent-to-action schema</td><td>Constrained schema; LLM does language understanding only</td>
+    <tr><td class="dec">Command handling</td><td>Free-form LLM generation; constrained intent-to-action schema</td><td>Constrained schema; the Intent Classifier does the command understanding, and the LLM is never in the command path</td>
       <td class="pros"><ul><li>Predictable behaviour</li><li>Prevents invented or invalid actions</li></ul></td>
-      <td class="cons"><ul><li>Some flexibility lost on novel phrasings<span class="why">Mitigated by the LLM understanding while a validated executor acts.</span></li></ul></td></tr>
+      <td class="cons"><ul><li>Some flexibility lost on novel phrasings<span class="why">Mitigated by the classifier's multilingual embedding understanding while a validated executor acts.</span></li></ul></td></tr>
     <tr><td class="dec">Driver monitoring compute</td><td>Cloud DMS; on-device DMS</td><td>On-device<span class="why">Sending cabin video to the cloud was a non-starter.</span></td>
       <td class="pros"><ul><li>Privacy: cabin video never leaves the car</li><li>Low latency; regulatory fit</li></ul></td>
       <td class="cons"><ul><li>No access to larger cloud perception models</li></ul></td></tr>
     <tr><td class="dec">Routing decision</td><td>Cloud-side router; on-device router</td><td>On-device router<span class="why">A cloud router would defeat the offline-first goal.</span></td>
       <td class="pros"><ul><li>Routing works offline; instant decisions</li></ul></td>
       <td class="cons"><ul><li>Less routing sophistication; must stay lightweight</li></ul></td></tr>
-    <tr><td class="dec">On-device model choice</td><td>Large general LLM on-device (infeasible on car NPU today); small specialised models</td><td>Small specialised Sarvam Edge stack plus a compact intent model</td>
-      <td class="pros"><ul><li>Sub-1GB footprint fits the NPU</li><li>Runs faster than real time</li></ul></td>
+    <tr><td class="dec">On-device model choice</td><td>Large general LLM on-device (infeasible on car NPU today); small specialised models</td><td>Small specialised Sarvam Edge speech stack, a compact intent encoder, and a compact 1-2B class Indic LM for grounded answers</td>
+      <td class="pros"><ul><li>Speech stack under 1GB; full on-device AI budget roughly 2GB, within cockpit-grade NPU memory</li><li>Speech stack runs faster than real time</li></ul></td>
       <td class="cons"><ul><li>Less on-device reasoning depth<span class="why">Exactly the gap cloud overflow fills.</span></li></ul></td></tr>
     <tr><td class="dec">Speech priority</td><td>Single queue; priority arbitration</td><td>Priority arbitration; safety pre-empts</td>
       <td class="pros"><ul><li>Guaranteed delivery of safety announcements</li></ul></td>
       <td class="cons"><ul><li>Rare interruptions to conversational smoothness<span class="why">Acceptable when the interruption is a collision warning.</span></li></ul></td></tr>
   </table>
-  <p><strong>Phasing:</strong> Phase 1 ships on-device voice control of cockpit and navigation, fully offline, in 22 languages. Phase 2 adds spoken ADAS awareness via the one-way feed. Phase 3 adds drowsiness and distraction interventions. Cloud overflow layers in throughout, as connectivity allows.</p>
-  <p><strong>To validate next:</strong> the on-device reasoning ceiling (what share of open queries stays local as edge models improve), the confirm-versus-act confidence threshold (false confirmations that annoy versus wrong actions that erode trust), and the exact ADAS/DMS interface contract, owned with the functional safety team.</p>
 </section>
 
 <section id="appendix">
@@ -745,16 +807,18 @@
     <tr><td>Mayura translation: 200ms</td><td>Benchmarked</td><td>High</td><td><a href="https://www.sarvam.ai/products/edge" target="_blank" rel="noopener">Sarvam Edge</a>, Snapdragon 8 Gen 3</td></tr>
     <tr><td>Bulbul TTS: 260ms</td><td>Benchmarked, proxy device</td><td>Medium</td><td><a href="https://www.sarvam.ai/products/edge" target="_blank" rel="noopener">Sarvam Edge</a>, measured on Samsung Galaxy S25 Ultra (phone silicon, not automotive Snapdragon cockpit compute)</td></tr>
     <tr><td>VAD endpoint: 300ms</td><td>Budget estimate</td><td>Low-medium</td><td>No Sarvam-specific figure; constructed from general <a href="https://deepgram.com/learn/voice-activity-detection" target="_blank" rel="noopener">VAD latency literature</a>, not benchmarked</td></tr>
-    <tr><td>Wake word: listening within ~100ms</td><td>Budget estimate</td><td>Medium</td><td>Roughly consistent with <a href="https://www.futurebeeai.com/knowledge-hub/wake-word-recognition-latency" target="_blank" rel="noopener">published wake-word latency research</a> (130-200ms typical end to end)</td></tr>
+    <tr><td>Wake word: listening within ~150ms</td><td>Budget estimate</td><td>Medium</td><td>Aligned with <a href="https://www.futurebeeai.com/knowledge-hub/wake-word-recognition-latency" target="_blank" rel="noopener">published wake-word latency research</a> (130-200ms typical end to end); an earlier draft's 100ms sat below its own source's range</td></tr>
     <tr><td>Intent classification + routing: 50ms</td><td>Budget estimate</td><td>Low</td><td>Not benchmarked; assumed fast because it's a small on-device classifier, not an LLM call</td></tr>
     <tr><td>Grounding + executor: 40ms</td><td>Budget estimate</td><td>Low</td><td>Not benchmarked. This line now covers both RAG retrieval (Section 4) and the Intent Classifier's shared embedding step (Section 3), neither independently re-measured</td></tr>
+    <tr><td>On-device LLM first tokens (grounded informational answers): 200-450ms</td><td>Budget estimate</td><td>Low</td><td>Not benchmarked; inferred from the feature catalog's 1 to 1.5s manual Q&amp;A figure minus the shared pipeline stages. No model-specific TTFT can exist until the answer-composition model is selected. Applies to informational edge turns only; the command path never runs the LLM</td></tr>
     <tr><td>Network send (cloud path): 100ms</td><td>Budget estimate</td><td>Low-medium</td><td>Not benchmarked; assumed for a small de-identified text payload over a warm connection</td></tr>
     <tr><td>Cloud LLM first tokens (Sarvam 30B/105B): ~2000ms</td><td>Benchmarked, with a caveat</td><td>Medium-high</td><td><a href="https://artificialanalysis.ai/providers/sarvam" target="_blank" rel="noopener">Artificial Analysis</a> third-party benchmark of Sarvam's public API; may not transfer unchanged to a dedicated in-vehicle deployment</td></tr>
-    <tr><td>Return + TTS (cloud path): 200ms</td><td>Budget estimate</td><td>Low-medium</td><td>Not benchmarked; assumed similar order of magnitude to the edge TTS figure</td></tr>
+    <tr><td>Network return (cloud path): 100ms</td><td>Budget estimate</td><td>Low-medium</td><td>Not benchmarked; assumed for a small text response over a warm connection, symmetric with the send leg</td></tr>
+    <tr><td>Bulbul TTS (cloud path): 260ms</td><td>Benchmarked, proxy device</td><td>Medium</td><td>The cloud answer is spoken locally, so the final stage is the same on-device Bulbul TTS as the edge path, not a separate cloud figure. An earlier draft folded return and TTS into one 200ms bar; they are now split, and the TTS cost matches edge</td></tr>
     <tr><td>Edge path total: ~1.05s (range 800ms-1.3s)</td><td>Derived (sum of above)</td><td>Medium</td><td>Only two of six components are independently benchmarked; not measured end to end on integrated hardware</td></tr>
-    <tr><td>Cloud path total: ~3.05s (range 2.9s-3.3s)</td><td>Derived (sum of above)</td><td>Medium</td><td>Dominated by the ~2s cloud LLM TTFT; sits close to the fallback timeout below, see Open Questions</td></tr>
-    <tr><td>Immediate spoken acknowledgement fires at ~750ms when the router commits to cloud</td><td>Design addition</td><td>Untested</td><td>Product decision to mask the ~3s cloud wait perceptually; the UX effect itself hasn't been usability-tested</td></tr>
-    <tr><td>Fallback timeout: 3 to 4s</td><td>Design choice</td><td>Under review</td><td>Not benchmarked; worth revisiting now that cloud typical latency (~3.05s) sits at the low end of this window</td></tr>
+    <tr><td>Cloud path total: ~3.21s (range ~3.0s-3.5s)</td><td>Derived (sum of above)</td><td>Medium</td><td>Dominated by the ~2s cloud LLM TTFT; the response leg is network return plus local Bulbul TTS. Lands well inside the delayed-response window below, see Open Questions</td></tr>
+    <tr><td>Immediate spoken acknowledgement: router commits at ~750ms, first ack audio ~1.0s after TTS first byte</td><td>Design addition</td><td>Untested</td><td>Product decision to mask the ~3.2s cloud wait perceptually; the UX effect itself hasn't been usability-tested</td></tr>
+    <tr><td>Delayed-response update: timed from the spoken acknowledgement; fires at ack + 4s if no answer has landed</td><td>Design choice</td><td>Decided, unbenchmarked</td><td>The clock starts when the assistant says "checking this over the internet", not at end of utterance. A typical cloud answer lands ~2 to 2.5s after the ack, well inside the window; if 4s pass with no answer, Vaani speaks a "taking longer than usual" update and keeps waiting, with no hard final timeout. Cloud p95/p99 latency, which sets how often this fires, is unmeasured</td></tr>
   </table>
 
   <h3 style="font-size:16px;margin-top:22px;margin-bottom:4px;">Routing and offline share</h3>
@@ -768,7 +832,7 @@
     <tr><th style="width:34%">Claim</th><th style="width:16%">Status</th><th style="width:16%">Confidence</th><th style="width:34%">Source / note</th></tr>
     <tr><td>Chunking, indexing, and top-k similarity search as the retrieval mechanism</td><td>Design addition</td><td>Standard practice, unbuilt</td><td>Architecturally standard for grounding small on-device models; not built or tested for this system</td></tr>
     <tr><td>Indexing happens once at OTA update time, with contacts/destinations refreshed as they change</td><td>Design choice</td><td>Unvalidated</td><td>Reasonable pattern; refresh cadence and index-rebuild cost on-device are unspecified</td></tr>
-    <tr><td>Embedding model footprint and retrieval latency</td><td>Not benchmarked, not budgeted</td><td>None</td><td>Not broken out from the sub-1GB speech-stack figure; this gap now sits under both retrieval and intent classification, since the two share a model</td></tr>
+    <tr><td>Embedding model footprint and retrieval latency</td><td>Budgeted within the ~2GB total, not benchmarked</td><td>Low</td><td>Carried inside the total on-device AI budget above rather than as an independent figure; this gap sits under both retrieval and intent classification, since the two share a model</td></tr>
     <tr><td>Control commands never touch the retrieval index</td><td>Design choice</td><td>High</td><td>Follows directly from the existing control-plane / content-plane separation (Section 6)</td></tr>
     <tr><td>Intent Classifier is a small multilingual text-encoder plus classification head, sharing its embedding model with RAG retrieval</td><td>Design decision</td><td>Reasoning sound, unvalidated</td><td>No specific model family chosen; the accuracy/footprint tradeoff of one shared encoder versus two specialized models hasn't been evaluated</td></tr>
   </table>
@@ -776,7 +840,10 @@
   <h3 style="font-size:16px;margin-top:22px;margin-bottom:4px;">Footprint and compute</h3>
   <table>
     <tr><th style="width:34%">Claim</th><th style="width:16%">Status</th><th style="width:16%">Confidence</th><th style="width:34%">Source / note</th></tr>
-    <tr><td>Full Indic stack (Saaras + Mayura + Bulbul) under 1GB on-device</td><td>Benchmarked, stronger than stated</td><td>High</td><td><a href="https://www.sarvam.ai/blogs/sarvam-edge" target="_blank" rel="noopener">Sarvam Edge</a> published component sizes total 688MB; the &lt;1GB claim has real margin</td></tr>
+    <tr><td>Full Indic speech stack (Saaras + Mayura + Bulbul) under 1GB on-device</td><td>Benchmarked, stronger than stated</td><td>High</td><td><a href="https://www.sarvam.ai/blogs/sarvam-edge" target="_blank" rel="noopener">Sarvam Edge</a> published component sizes total 688MB (Saaras 294MB, Mayura 334MB, Bulbul 60MB); the &lt;1GB claim has real margin. This figure covers speech components only</td></tr>
+    <tr><td>On-device answer-composition LM: compact instruction-tuned Indic model, 1-2B class, 4-bit quantized, budgeted 0.7-1.2GB</td><td>Budget estimate</td><td>Low</td><td>Model family not yet selected; the budget is parameter-count arithmetic (parameters times roughly half a byte at 4-bit, plus runtime overhead). An earlier draft implicitly folded this model into the sub-1GB speech-stack figure; it is now broken out as its own line</td></tr>
+    <tr><td>Total on-device AI budget: roughly 2GB (speech stack + answer LM + shared embedding model)</td><td>Budget estimate</td><td>Low</td><td>Comfortable on cockpit-grade Snapdragon platforms on paper, but unvalidated against any specific SoC's shared-memory map or against concurrent ADAS/DMS load</td></tr>
+    <tr><td>All 22 Indian languages fully on-device</td><td>Reported by Sarvam</td><td>Medium</td><td><a href="https://www.sarvam.ai/products/edge" target="_blank" rel="noopener">Sarvam Edge</a>'s automotive positioning claims voice AI for navigation, climate, and vehicle controls in 22+ Indian languages fully on vehicle hardware; component-level API documentation publishes narrower coverage for some components (Bulbul at 11 languages). Per-language quality parity therefore remains a design target, not a settled fact</td></tr>
     <tr><td>NPU compute budget shared across assistant, ADAS perception, and DMS</td><td>Not addressed</td><td>Unknown</td><td>Treated as logically/data isolated (correct for the safety requirement) but silicon and scheduling sharing is unspecified</td></tr>
   </table>
 
@@ -798,14 +865,14 @@
   </table>
 
   <h3 style="font-size:16px;margin-top:22px;margin-bottom:4px;">Open questions on sourcing</h3>
-  <p>In addition to the three architectural open questions named in Section 8, these are open at the level of the numbers themselves:</p>
+  <p>These are open at the level of the numbers themselves:</p>
   <ul class="clean">
-    <li><strong>Cloud latency margin against fallback.</strong> Typical cloud response (~3.05s) now sits right at the start of the 3-4s fallback timeout window. Either the threshold needs revisiting, cloud needs a lower-latency deployment path, or this margin is accepted as-is with the immediate acknowledgement doing the work of masking it.</li>
+    <li><strong>Cloud latency tail against the delayed-response update.</strong> The update is timed from the spoken acknowledgement and fires at ack + 4s; typical cloud latency (~3.21s, roughly 2 to 2.5s after the ack) lands well inside that window. What remains open is the tail: no p95 or p99 cloud latency figure exists, and the tail, not the median, is what determines how often the delayed-response update fires.</li>
     <li><strong>Pipelining vs. serial summation.</strong> All waterfall totals are naive sums of standalone benchmarks. A real streaming implementation could overlap stages and lower actual latency below what's stated here; no integrated pipeline benchmark exists to confirm this.</li>
     <li><strong>Several waterfall components remain unbenchmarked budget estimates</strong>: VAD endpoint, intent/routing, grounding/executor, network send, and cloud return+TTS. Lowest-confidence numbers in the latency story.</li>
     <li><strong>Bulbul TTS's 260ms figure is a phone benchmark</strong> (Galaxy S25 Ultra), not automotive silicon. Directionally fine since both run on Hexagon NPU class hardware, but not a like-for-like number.</li>
     <li><strong>The ~90% on-device resolution share is the weakest-sourced headline number in this document.</strong> No internal measurement and no external benchmark back it, only a directional argument from the feature catalog's own placement mix.</li>
-    <li><strong>The on-device retrieval and Intent Classifier sections both depend on an embedding model whose footprint and latency aren't separately budgeted.</strong> If asked for a bill of materials on top of Saaras/Mayura/Bulbul, there isn't one yet.</li>
+    <li><strong>The bill of materials on top of Saaras/Mayura/Bulbul now exists as budget lines, but nothing in it is benchmarked.</strong> The shared embedding model and the 1-2B class answer-composition LM both carry footprint and latency figures derived from arithmetic and inference, not measurement, and the LM's model family is still an open selection.</li>
   </ul>
 
   <footer>Vaani Auto · product and architecture design · Srivar Burla</footer>
